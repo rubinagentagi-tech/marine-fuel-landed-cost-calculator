@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marine Fuel Landed Cost Calculator (Canada)</title>
+<style>
+  :root{--bg:#0e1420;--panel:#151e2e;--panel2:#1a2436;--line:#2a3750;--txt:#e6edf7;--mut:#8fa0bd;--acc:#38bdf8;--good:#34d399;--warn:#fbbf24;--bad:#f87171}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);padding:24px;line-height:1.5}
+  h1{font-size:22px;margin-bottom:4px}
+  .sub{color:var(--mut);font-size:13px;margin-bottom:18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;max-width:1200px;margin:0 auto}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .panel h2{font-size:14px;text-transform:uppercase;letter-spacing:.5px;color:var(--acc);margin-bottom:12px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px}
+  .row label{font-size:13px;color:var(--txt)}
+  .row .hint{font-size:11px;color:var(--mut)}
+  input,select{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:5px 8px;font-size:13px;width:130px;text-align:right}
+  select{width:auto;text-align:left}
+  input:focus,select:focus{outline:1px solid var(--acc)}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:9px;cursor:pointer}
+  .chk input{width:auto;text-align:left}
+  .out{font-size:14px;padding:6px 0;display:flex;justify-content:space-between;border-bottom:1px dashed var(--line)}
+  .out span:first-child{color:var(--mut)}
+  .out.big{font-size:17px;border-bottom:none;margin-top:8px;padding-top:10px;border-top:2px solid var(--acc)}
+  .out.big span:last-child{color:var(--good);font-weight:600}
+  .rec{color:var(--good)!important}
+  .norec{color:var(--bad)!important}
+  .warn{color:var(--warn)!important}
+  .note{font-size:11px;color:var(--mut);margin-top:10px;border-left:3px solid var(--line);padding-left:8px}
+  .disclaimer{font-size:11px;color:var(--mut);margin-top:14px;text-align:center;max-width:1200px;margin-left:auto;margin-right:auto}
+  .sum-btn{margin-top:10px;background:var(--acc);border:none;color:#06121f;font-weight:600;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px}
+  .sum-btn:hover{opacity:.9}
+  .pill{font-size:10px;padding:2px 7px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);color:var(--mut)}
+</style>
+</head>
+<body>
+<div style="max-width:1200px;margin:0 auto 16px">
+  <h1>⚓ Marine Fuel Landed Cost Calculator — Canada</h1>
+  <div class="sub">True all-in $/L for MGO / VLSFO / HFO bunkers on the East Coast &amp; Great Lakes. Separate the <b>non-reclaimable taxes</b> from the real product cost. All rates are editable — presets from 2026 published schedules.</div>
+</div>
+<div class="grid">
+  <!-- INPUTS -->
+  <div>
+    <div class="panel">
+      <h2>Delivery</h2>
+      <div class="row"><label>Fuel type <span class="hint">sets density</span></label>
+        <select id="fuel"><option value="0.845">MGO / ULSD</option><option value="0.900">VLSFO</option><option value="0.865">LSMGO</option><option value="0.950">HFO / IFO380</option></select></div>
+      <div class="row"><label>Density <span class="hint">kg/L @15°C</span></label><input id="dens" type="number" step="0.001" value="0.845"></div>
+      <div class="row"><label>Quantity (metric tonnes)</label><input id="qty" type="number" step="0.1" value="70"></div>
+      <div class="row"><label>Price <span class="hint">$/MT</span></label><input id="price" type="number" step="0.01" value="700"></div>
+      <div class="row"><label>Currency</label><select id="ccy"><option value="CAD">CAD / MT</option><option value="USD">USD / MT</option></select></div>
+      <div class="row"><label>FX (USD→CAD) <span class="hint">ignored if CAD</span></label><input id="fx" type="number" step="0.0001" value="1.36"></div>
+      <div class="row"><label>Delivery province</label>
+        <select id="prov"><option value="on">Ontario</option><option value="qc">Québec</option><option value="nb">New Brunswick</option><option value="ns">Nova Scotia</option><option value="nl">Newfoundland</option></select></div>
+      <div class="chk"><input type="checkbox" id="marineExempt" checked><span>Provincial road-tax <b>marine exemption</b> in place</span></div>
+      <div class="chk"><input type="checkbox" id="shipsStores" ><span>Ships' Stores drawback voyage (int'l) — excise reclaimable</span></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h2>Tax parameters (¢/L — editable)</h2>
+      <div class="row"><label>Federal excise (ETA)</label><input id="excise" type="number" step="0.1" value="4.0"></div>
+      <div class="row"><label>Carbon tax / fuel charge</label>
+        <select id="carbonYear" style="width:70px"><option value="17">2025</option><option value="19" selected>2026</option><option value="23">2027</option><option value="26">2028</option><option value="29">2029</option><option value="35">2030</option></select>
+        <input id="carbon" type="number" step="0.1" value="19.0"></div>
+      <div class="row"><label>GST/HST %</label><input id="gst" type="number" step="0.1" value="13.0"></div>
+      <div class="note">GST/HST is fully reclaimable via ITC (cash-flow only). Carbon tax has <b>no marine exemption</b>. Federal excise is reclaimable only via Ships' Stores drawback on international voyages.</div>
+    </div>
+  </div>
+  <!-- RESULTS -->
+  <div>
+    <div class="panel">
+      <h2>Result</h2>
+      <div class="out"><span>Volume</span><span id="rVol">—</span></div>
+      <div class="out"><span>Product cost</span><span id="rProd">—</span></div>
+      <div class="out"><span>Federal excise <span class="pill" id="pExc">NON-RECLAIMABLE</span></span><span id="rExc">—</span></div>
+      <div class="out"><span>Carbon tax / fuel charge <span class="pill">NON-RECLAIMABLE</span></span><span id="rCar">—</span></div>
+      <div class="out"><span>Provincial road tax <span class="pill" id="pRoad">EXEMPT ✓</span></span><span id="rRoad">—</span></div>
+      <div class="out"><span>GST / HST <span class="pill" style="color:var(--good)">RECLAIMABLE (ITC)</span></span><span id="rGst">—</span></div>
+      <div class="out big"><span>Non-reclaimable tax total</span><span id="rTaxTot">—</span></div>
+      <div class="out"><span>True landed cost <b>(incl. non-reclaimable tax)</b></span><span id="rLandedL">—</span></div>
+      <div class="out"><span>All-in cash $/L (incl. reclaimable)</span><span id="rAllInL">—</span></div>
+      <div class="out"><span>Landed $/MT equivalent</span><span id="rLandedMT">—</span></div>
+      <button class="sum-btn" onclick="copySummary()">Copy summary</button>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h2>Why this matters</h2>
+      <div class="note" style="font-size:12px;color:var(--txt)">
+        At ~70 MT / 83,000 L × 40 deliveries a year, non-reclaimable taxes at 2026 rates are roughly
+        <b>$760,000 CAD/year</b> — and heading toward ~$1.27M by 2030 as the carbon charge escalates.
+        Getting the exemption paperwork right (provincial marine cert + Ships' Stores drawback) is real money, every voyage.
+      </div>
+      <div class="note" style="font-size:12px;color:var(--txt);margin-top:8px">
+        <b>AP red flags:</b> provincial road tax charged on a marine delivery · QST on a QC marine delivery ·
+        carbon tax missing as a line item · volume not at 15°C · price differing from the PO. Stop and check.
+      </div>
+    </div>
+  </div>
+</div>
+<div class="disclaimer">Rates are presets from published schedules (Excise Tax Act; GGPPA federal fuel charge; provincial marine-exemption programs) and are <b>editable</b> — verify current rates before any commercial decision. This tool is for analysis, not tax advice. No vendor or vessel data is stored or transmitted; everything runs locally in your browser.</div>
+
+<script>
+const EXC = 4.0, ROAD={on:14.3,qc:19.2,nb:8.0,ns:15.5,nl:16.5}, HST={on:13,qc:5,nb:15,ns:15,nl:15};
+const EXEMPT_NOTE={on:"Ontario bulk permit",qc:"QC FP-250.1-V",nb:"NB standard marine cert",ns:"NS interprovincial cert",nl:"NL via supplier (Woodward)"};
+const PROV_NAME={on:"Ontario",qc:"Québec",nb:"New Brunswick",ns:"Nova Scotia",nl:"Newfoundland"};
+const $=id=>document.getElementById(id);
+function recalc(){
+  const dens=parseFloat($("dens").value)||0.845, qty=parseFloat($("qty").value)||0;
+  const price=parseFloat($("price").value)||0, fx=$("ccy").value==="USD"?parseFloat($("fx").value)||1.36:1;
+  const prov=$("prov").value, exempt=$("marineExempt").checked, ss=$("shipsStores").checked;
+  const carbon=parseFloat($("carbon").value)||0, excise=parseFloat($("excise").value)||0;
+  const gstPct=parseFloat($("gst").value)||0;
+  const L=qty*1000/dens;
+  const cadPerL=price*fx*dens/1000;               // $/L product
+  const prod=cadPerL*L;
+  const excAmt=ss?0:excise/100*L;                  // reclaimable if Ships' Stores
+  const carAmt=carbon/100*L;
+  const roadAmt=exempt?0:ROAD[prov]/100*L;
+  const gstAmt=prod*gstPct/100;                    // on product only (taxes on fuel are mostly non-taxable base) — cash view
+  const totNR=excAmt+carAmt+roadAmt;
+  $("rVol").textContent=L.toLocaleString(undefined,{maximumFractionDigits:0})+" L";
+  $("rProd").textContent="$"+prod.toLocaleString(undefined,{maximumFractionDigits:0});
+  $("rExc").innerHTML="$"+excAmt.toLocaleString(undefined,{maximumFractionDigits:0})+(ss?" <span class='rec'>(drawback)</span>":"");
+  $("rCar").textContent="$"+carAmt.toLocaleString(undefined,{maximumFractionDigits:0});
+  $("rRoad").innerHTML=exempt?"<span class='rec'>$0.00 — exempt ✓</span>":"$"+roadAmt.toLocaleString(undefined,{maximumFractionDigits:0});
+  $("rGst").textContent="$"+gstAmt.toLocaleString(undefined,{maximumFractionDigits:0});
+  $("pExc").textContent=ss?"RECLAIMABLE (drawback)":"NON-RECLAIMABLE";
+  $("pExc").className="pill "+(ss?"rec":"norec");
+  $("pRoad").textContent=exempt?"EXEMPT ✓":"CHARGED";
+  $("pRoad").className="pill "+(exempt?"rec":"warn");
+  $("rTaxTot").innerHTML="$"+totNR.toLocaleString(undefined,{maximumFractionDigits:0})+" <span style='font-size:11px;color:var(--mut)'>= "+(totNR/L*100).toFixed(1)+"¢/L</span>";
+  $("rLandedL").innerHTML="$"+((prod+totNR)/L).toFixed(4)+" <span style='font-size:11px;color:var(--mut)'>/L</span>";
+  $("rAllInL").innerHTML="$"+((prod+totNR+gstAmt)/L).toFixed(4)+" <span style='font-size:11px;color:var(--mut)'>/L</span>";
+  $("rLandedMT").textContent="$"+( (prod+totNR)/qty ).toLocaleString(undefined,{maximumFractionDigits:2})+" /MT";
+}
+function copySummary(){
+  const L=parseFloat($("rVol").textContent.replace(/[,L]/g,""));
+  const txt=["MARINE FUEL LANDED COST SUMMARY (Canada)",
+    "Fuel: "+$("fuel").selectedOptions[0].text+" @ "+$("qty").value+" MT ("+L.toLocaleString()+" L) — "+PROV_NAME[$("prov").value],
+    "Product: "+$("rProd").textContent+"   True landed: "+$("rLandedL").innerText+"   All-in cash: "+$("rAllInL").innerText,
+    "Non-reclaimable tax total: "+$("rTaxTot").innerText,
+    "Provincial exemption: "+($("marineExempt").checked?"in place ("+EXEMPT_NOTE[$("prov").value]+")":"NOT in place")+"   Ships' Stores drawback: "+($("shipsStores").checked?"yes":"no"),
+    "Rates used: excise "+$("excise").value+"¢  carbon "+$("carbon").value+"¢  HST/GST "+$("gst").value+"%",
+    "Generated with the Marine Fuel Landed Cost Calculator — verify rates before commercial use."].join("\n");
+  navigator.clipboard&&navigator.clipboard.writeText(txt); alert("Summary copied to clipboard");
+}
+[$("fuel"),$("dens"),$("qty"),$("price"),$("ccy"),$("fx"),$("prov"),$("marineExempt"),$("shipsStores"),$("excise"),$("carbon"),$("gst")].forEach(el=>el.addEventListener("input",recalc));
+$("carbonYear").addEventListener("change",()=>{$("carbon").value=$("carbonYear").value;recalc();});
+$("prov").addEventListener("change",()=>{$("gst").value=HST[$("prov").value];recalc();});
+recalc();
+</script>
+</body>
+</html>
